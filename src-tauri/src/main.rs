@@ -1,10 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use serde_json::Error;
+use tauri::{utils::config::WindowConfig, Menu, MenuItem, Submenu, WindowBuilder};
 
-use tauri::{Menu, MenuItem, Submenu};
-
-// 对command单独管理
-mod command;
+fn json_to_window_config(window_json: &str) -> Result<WindowConfig, Error> {
+    serde_json::from_str(window_json)
+}
 
 fn main() {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
@@ -23,19 +24,23 @@ fn main() {
             .add_native_item(MenuItem::Quit),
     ));
     tauri::Builder::default()
+        .setup(|app| {
+            let app_handle = app.handle();
+            let window_json = r#"{"label":"MeiMei","title":"MeiMei","url":"https://www.json.cn/","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36","width":1920,"height":1080,"theme":null,"resizable":true,"fullscreen":false,"maximized":false,"minWidth":400,"minHeight":300,"maxWidth":1920,"maxHeight":1080,"decorations":true,"transparent":false,"titleBarStyle":"Visible","visible":true,"focus":true,"closable":true,"minimizable":true,"maximizable":true,"alwaysOnTop":false,"alwaysOnBottom":false,"center":false,"skipTaskbar":false,"tabbingIdentifier":null,"parent":null,"dragDropEnabled":true,"browserExtensionsEnabled":false,"devtools":true,"contentProtected":false,"hiddenTitle":false,"incognito":false,"proxyUrl":null,"useHttpsScheme":false,"zoomHotkeysEnabled":false,"backgroundColor":"#ffffff","shadow":true,"acceptFirstMouse":false,"additionalBrowserArgs":""}"#;
+            match json_to_window_config(window_json) {
+                Ok(config) => {
+                    println!("Parsed WindowConfig: {:?}", config);
+                    let _main_window = WindowBuilder::from_config(&app_handle, config)
+                        .build()
+                        .unwrap();
+                }
+                Err(err) => {
+                    eprintln!("Failed to parse JSON: {}", err);
+                }
+            }
+            Ok(())
+        })
         .menu(menu)
-        .invoke_handler(tauri::generate_handler![
-            command::pakeplus::open_window,
-            command::pakeplus::preview_from_config,
-            command::pakeplus::update_build_file,
-            command::pakeplus::update_config_file,
-            command::pakeplus::update_cargo_file,
-            command::pakeplus::update_main_rust,
-            command::pakeplus::update_custom_js,
-            command::pakeplus::content_to_base64,
-            command::pakeplus::update_config_json,
-            command::pakeplus::rust_main_window,
-        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
