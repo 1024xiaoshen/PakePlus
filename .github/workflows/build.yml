@@ -83,7 +83,7 @@ jobs:
               with:
                   tagName: DatTime-v__VERSION__
                   releaseName: 'DatTime v__VERSION__'
-                  body_path: 'RELEASEBODYRELEASEBODY'
+                  releaseBody: '3333333'
                   releaseDraft: false
                   prerelease: false
                   publish: true
