@@ -81,9 +81,9 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  tagName: DatTime
-                  releaseName: 'DatTime v__VERSION__'
-                  releaseBody: 'sdfasdfasdfasdf'
+                  tagName: DataTime
+                  releaseName: 'DataTime v__VERSION__'
+                  releaseBody: '22222'
                   releaseDraft: false
                   prerelease: false
                   publish: true
