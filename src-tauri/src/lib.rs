@@ -1,7 +1,12 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
 mod command;
-use tauri::menu::*;
+use serde_json::Error;
+use tauri::{menu::*, utils::config::WindowConfig};
+
+fn json_to_window_config(window_json: &str) -> Result<WindowConfig, Error> {
+    serde_json::from_str(window_json)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -28,12 +33,31 @@ pub fn run() {
             );
             menu
         })
+        .setup(|app| {
+            let app_handle = app.handle();
+            let window_json = r#"{"label":"AiData","title":"AIdata","url":"https://www.csdn.net/?spm=1001.2014.3001.4476","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15","width":1024,"height":768,"theme":null,"resizable":true,"fullscreen":false,"maximized":false,"minWidth":400,"minHeight":300,"maxWidth":1920,"maxHeight":1080,"decorations":true,"transparent":false,"titleBarStyle":"Visible","visible":true,"focus":true,"closable":true,"minimizable":true,"maximizable":true,"alwaysOnTop":false,"alwaysOnBottom":false,"center":false,"skipTaskbar":false,"tabbingIdentifier":null,"parent":null,"dragDropEnabled":true,"browserExtensionsEnabled":false,"devtools":true,"contentProtected":false,"hiddenTitle":false,"incognito":false,"proxyUrl":null,"useHttpsScheme":false,"zoomHotkeysEnabled":false,"acceptFirstMouse":false,"additionalBrowserArgs":""}"#;
+            match json_to_window_config(window_json) {
+                Ok(config) => {
+                    println!("Parsed WindowConfig: {:?}", config);
+                    let _main_window =
+                        tauri::WebviewWindowBuilder::from_config(app_handle, &config)
+                            .unwrap()
+                            .build()
+                            .unwrap();
+                }
+                Err(err) => {
+                    eprintln!("Failed to parse JSON: {}", err);
+                }
+            }
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             command::pakeplus::open_window,
             command::pakeplus::preview_from_config,
@@ -41,7 +65,6 @@ pub fn run() {
             command::pakeplus::update_config_file,
             command::pakeplus::update_cargo_file,
             command::pakeplus::update_main_rust,
-            command::pakeplus::rust_lib_window,
             command::pakeplus::update_custom_js,
             command::pakeplus::content_to_base64,
             command::pakeplus::update_config_json,
